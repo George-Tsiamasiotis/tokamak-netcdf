@@ -1,0 +1,23 @@
+[package]
+name = "tokamak-netcdf"
+authors = ["George Tsiamasiotis"]
+version = "0.1.0"
+edition = "2024"
+keywords = ["netcdf", "tokamak"]
+readme = "README.md"
+license = "GPL-3.0-only"
+documentation = "https://docs.rs/tokamak-netcdf/latest/tokamak-netcdf/"
+repository = "https://github.com/George-Tsiamasiotis/tokamak-netcdf.git"
+description = "A crate for opening tokamak reconstructed equilibria in the form of a netCDF file."
+
+[dependencies]
+ndarray = "0.16.1"
+netcdf = "0.11.0"
+thiserror = "2.0.16"
+
+[features]
+default = []
+static = ["netcdf/static"]
+
+[package.metadata.docs.rs]
+features = ["static"]
