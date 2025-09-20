@@ -47,4 +47,4 @@ pub const D2B_DPSI2: &str = "d2b_dpsi2_norm";
 /// R(ψ, θ): The `R` coordinate with respect to boozer coordinates **in \[m\]**.
 pub const R: &str = "R";
 /// Z(ψ, θ): The `Z` coordinate with respect to boozer coordinates **in \[m\]**.
-pub const Z: &str = "R";
+pub const Z: &str = "Z";

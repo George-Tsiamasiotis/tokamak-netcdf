@@ -4,10 +4,14 @@ use crate::NcError;
 use crate::Result;
 
 use ndarray::Array1;
-use netcdf::{NcTypeDescriptor, Variable};
+use netcdf::Variable;
 
 /// Extracts a [`Variable`] from a netCDF File.
-pub(crate) fn extract_variable<'f>(f: &'f netcdf::File, name: &str) -> Result<Variable<'f>> {
+///
+/// # Error
+///
+/// Returns an [`NcError`] if the variable not found.
+pub fn extract_variable<'f>(f: &'f netcdf::File, name: &str) -> Result<Variable<'f>> {
     match f.variable(name) {
         Some(var) => Ok(var),
         None => Err(NcError::VariableNotFound(name.into())),
@@ -15,17 +19,27 @@ pub(crate) fn extract_variable<'f>(f: &'f netcdf::File, name: &str) -> Result<Va
 }
 
 /// Checks if a [`Variable`] is empty.
-fn check_if_empty(var: &Variable) -> Result<()> {
+///
+/// # Error
+///
+/// Returns an [`NcError`] if the variable is empty.
+pub fn check_if_empty(var: &Variable) -> Result<()> {
     match var.len() {
         1.. => Ok(()),
         0 => Err(NcError::EmptyVariable(var.name().into())),
     }
 }
 
-pub(crate) fn extract_scalar<T>(f: &netcdf::File, name: &str) -> Result<T>
-where
-    T: NcTypeDescriptor + Copy,
-{
+/// Extracts a scalar value from the netCDF file.
+///
+/// # Error
+///
+/// Retruns an [`NcError`] if the variable:
+///
+/// - is not found,
+/// - is empty,
+/// - is not scalar (has dimensions).
+pub fn extract_scalar(f: &netcdf::File, name: &str) -> Result<f64> {
     use crate::NcError::*;
 
     let var = extract_variable(f, name)?;
@@ -37,7 +51,7 @@ where
         return Err(NotScalar(name.into()));
     }
 
-    match var.get_value::<T, _>(..) {
+    match var.get_value::<f64, _>(..) {
         Ok(value) => Ok(value),
         Err(err) => Err(GetValuesError {
             source: err,
@@ -47,10 +61,15 @@ where
 }
 
 /// Extracts a 1D [`Variable`].
-pub(crate) fn extract_1d_var<T>(f: &netcdf::File, name: &str) -> Result<Array1<T>>
-where
-    T: NcTypeDescriptor + Copy + Default,
-{
+///
+/// # Error
+///
+/// Retruns an [`NcError`] if the variable:
+///
+/// - is not found,
+/// - is empty,
+/// - is not 1-dimensional.
+pub fn extract_1d_var(f: &netcdf::File, name: &str) -> Result<Array1<f64>> {
     let var = extract_variable(f, name)?;
     check_if_empty(&var)?;
 
@@ -58,13 +77,13 @@ where
         return Err(NcError::Not1D(name.into()));
     }
 
-    let mut data = Array1::<T>::default(var.len());
+    let mut data = Array1::from_elem(var.len(), f64::NAN);
 
     match var.get_into(data.view_mut(), ..) {
-        Ok(()) => Ok(data),
         Err(err) => Err(NcError::GetValuesError {
             source: err,
             name: name.into(),
         }),
+        Ok(()) => Ok(data),
     }
 }
