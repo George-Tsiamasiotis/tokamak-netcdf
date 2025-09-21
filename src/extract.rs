@@ -3,7 +3,7 @@
 use crate::NcError;
 use crate::Result;
 
-use ndarray::Array1;
+use ndarray::{Array1, Array2};
 use netcdf::Variable;
 
 /// Extracts a [`Variable`] from a netCDF File.
@@ -83,6 +83,35 @@ pub fn extract_1d_var(f: &netcdf::File, name: &str) -> Result<Array1<f64>> {
         Err(err) => Err(NcError::GetValuesError {
             source: err,
             name: name.into(),
+        }),
+        Ok(()) => Ok(data),
+    }
+}
+
+/// Extracts a 2D [`Variable`]
+///
+/// Retruns an [`NcError`] if the variable:
+///
+/// - is not found,
+/// - is empty,
+/// - is not 2-dimensional.
+pub fn extract_2d_var(f: &netcdf::File, name: &str) -> Result<Array2<f64>> {
+    let var = extract_variable(f, name)?;
+    check_if_empty(&var)?;
+
+    if var.dimensions().len() != 2 {
+        return Err(NcError::Not2D(var.name().into()));
+    }
+
+    // Dimension order is (ψ, θ).
+    let dims = var.dimensions().to_vec();
+    let shape = (dims[0].len(), dims[1].len());
+    let mut data = Array2::<f64>::from_elem(shape, f64::NAN);
+
+    match var.get_into(data.view_mut(), (.., ..)) {
+        Err(err) => Err(NcError::GetValuesError {
+            source: err,
+            name: var.name().into(),
         }),
         Ok(()) => Ok(data),
     }

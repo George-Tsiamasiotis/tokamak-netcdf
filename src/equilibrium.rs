@@ -126,7 +126,7 @@ impl Equilibrium {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
     /// # use std::path::PathBuf;
     /// # use tokamak_netcdf::*;
     /// # use tokamak_netcdf::variable_names::*;
@@ -142,7 +142,9 @@ impl Equilibrium {
         use crate::variable_names::*;
 
         match name {
-            B_FIELD | DB_DTHETA | DB_DPSI | D2B_DPSI2 => todo!(),
+            B_FIELD | DB_DTHETA | DB_DPSI | D2B_DPSI2 | R | Z => {
+                crate::extract_2d_var(&self.file, name)
+            }
             _ => Err(crate::NcError::VariableNotFound(name.into())),
         }
     }
@@ -158,17 +160,24 @@ mod test {
     #[ignore = "needs real dataset"]
     fn test_real_nc_data() {
         let path = PathBuf::from("./reconstructed/smart_positive.nc");
-        let file = Equilibrium::from_file(&path).unwrap();
+        let eq = Equilibrium::from_file(&path).unwrap();
 
-        file.get_scalar(B_AXIS).unwrap();
-        file.get_scalar(R_AXIS).unwrap();
-        file.get_scalar(Z_AXIS).unwrap();
+        eq.get_scalar(B_AXIS).unwrap();
+        eq.get_scalar(R_AXIS).unwrap();
+        eq.get_scalar(Z_AXIS).unwrap();
 
-        file.get_1d(PSI_COORD).unwrap();
-        file.get_1d(THETA_COORD).unwrap();
+        eq.get_1d(PSI_COORD).unwrap();
+        eq.get_1d(THETA_COORD).unwrap();
 
-        file.get_1d(Q_FACTOR).unwrap();
-        file.get_1d(CURRENT_I).unwrap();
-        file.get_1d(CURRENT_G).unwrap();
+        eq.get_1d(Q_FACTOR).unwrap();
+        eq.get_1d(CURRENT_I).unwrap();
+        eq.get_1d(CURRENT_G).unwrap();
+
+        eq.get_2d(R).unwrap();
+        eq.get_2d(Z).unwrap();
+        eq.get_2d(B_FIELD).unwrap();
+        eq.get_2d(DB_DTHETA).unwrap();
+        eq.get_2d(DB_DPSI).unwrap();
+        eq.get_2d(D2B_DPSI2).unwrap();
     }
 }
