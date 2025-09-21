@@ -8,6 +8,7 @@ use crate::Result;
 #[allow(unused_imports)] // Needed for documentation fields.
 use crate::variable_names::*;
 
+#[non_exhaustive]
 #[derive(Debug)]
 /// Tokamak Equilibrium Representation.
 ///

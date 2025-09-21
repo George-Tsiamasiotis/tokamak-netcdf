@@ -3,7 +3,7 @@
 use crate::NcError;
 use crate::Result;
 
-use ndarray::{Array1, Array2};
+use ndarray::{Array1, Array2, ArrayView1, Axis, array};
 use netcdf::Variable;
 
 /// Extracts a [`Variable`] from a netCDF File.
@@ -114,5 +114,80 @@ pub fn extract_2d_var(f: &netcdf::File, name: &str) -> Result<Array2<f64>> {
             name: var.name().into(),
         }),
         Ok(()) => Ok(data),
+    }
+}
+
+/// Extracts a variable from the NetCDF file and prepends the first value.
+///
+/// The first value is the closest to the magnetic axis at index 0.
+pub fn extract_var_with_first_axis_value(f: &netcdf::File, name: &str) -> Result<Array1<f64>> {
+    let arr: Array1<f64> = extract_1d_var(f, name)?;
+    extract_var_with_axis_value(f, name, arr[0])
+}
+
+/// Extracts a variable from the NetCDF file and prepends `element` at index 0.
+pub fn extract_var_with_axis_value(
+    f: &netcdf::File,
+    name: &str,
+    element: f64,
+) -> Result<Array1<f64>> {
+    let arr: Array1<f64> = extract_1d_var(f, name)?;
+    let view = ArrayView1::from(&arr);
+    let mut prepended: Array1<f64> = array![element];
+
+    // This is not expected to fail since both arrays are guranteed to be of the same shape (1,).
+    match prepended.append(Axis(0), view) {
+        Ok(()) => Ok(prepended),
+        Err(_) => unreachable!("Shape mismatch in prepending axis value."),
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    static VAR_LENGTH: usize = 5;
+
+    /// Creates a phony NetCDF file for use across the tests.
+    fn phony_netcdf() -> std::result::Result<netcdf::FileMut, netcdf::Error> {
+        let path = std::env::temp_dir().join("phony.nc");
+        let path_str = path.to_str().unwrap();
+
+        let mut f = netcdf::create(path_str)?;
+        std::fs::remove_file(path).unwrap();
+
+        f.add_dimension("dim1", VAR_LENGTH)?;
+        f.add_dimension("dim2", VAR_LENGTH)?;
+        f.add_variable::<f64>("var", &["dim2"])?;
+
+        f.add_dimension("empty_dim", 0)?;
+        f.add_variable::<f64>("empty_var", &["empty_dim"])?;
+
+        f.add_variable::<f64>("2dvar", &["dim1", "dim2"])?;
+        f.add_variable::<f64>("float_var", &["dim1"])?;
+
+        f.add_variable::<i32>("number", &[])?
+            .put_values(&[18], ..)?;
+        Ok(f)
+    }
+
+    #[test]
+    fn test_axis_value() {
+        let mut f = phony_netcdf().unwrap();
+        let data: [f64; VAR_LENGTH] = [2.0, 3.0, 4.0, 5.0, 6.0];
+
+        f.variable_mut("float_var")
+            .expect("Error extracting mutable variable.")
+            .put_values(&data, ..)
+            .expect("Error putting values to variable");
+
+        assert_eq!(
+            Array1::<f64>::from_vec(vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0]),
+            extract_var_with_axis_value(&f, "float_var", 1.0).unwrap()
+        );
+        assert_eq!(
+            Array1::<f64>::from_vec(vec![2.0, 2.0, 3.0, 4.0, 5.0, 6.0]),
+            extract_var_with_first_axis_value(&f, "float_var").unwrap()
+        );
     }
 }
