@@ -113,7 +113,7 @@ impl Equilibrium {
         use crate::variable_names::*;
 
         match name {
-            PSI_COORD | THETA_COORD | Q_FACTOR | CURRENT_G | CURRENT_I => {
+            PSI_COORD | PSIP_COORD | THETA_COORD | Q_FACTOR | CURRENT_G | CURRENT_I => {
                 crate::extract_1d_var(&self.file, name)
             }
             _ => Err(crate::NcError::VariableNotFound(name.into())),
@@ -153,14 +153,14 @@ impl Equilibrium {
 
 #[cfg(test)]
 mod test {
-    use crate::Equilibrium;
     use crate::variable_names::*;
+    use crate::Equilibrium;
     use std::path::PathBuf;
 
     #[test]
     #[ignore = "needs real dataset"]
     fn test_real_nc_data() {
-        let path = PathBuf::from("./reconstructed/smart_positive.nc");
+        let path = PathBuf::from("./data.nc");
         let eq = Equilibrium::from_file(&path).unwrap();
 
         eq.get_scalar(B_AXIS).unwrap();
@@ -168,6 +168,7 @@ mod test {
         eq.get_scalar(Z_AXIS).unwrap();
 
         eq.get_1d(PSI_COORD).unwrap();
+        eq.get_1d(PSIP_COORD).unwrap();
         eq.get_1d(THETA_COORD).unwrap();
 
         eq.get_1d(Q_FACTOR).unwrap();

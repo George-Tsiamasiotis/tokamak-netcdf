@@ -19,8 +19,10 @@ pub const PHI_TOR_EDGE: &str = "phi_tor_edge";
 
 // ================= Coordinates =================
 
-/// The boozer poloidal angle **in \[rads\]**.
+/// The boozer toroidal angle **in \[rads\]**.
 pub const PSI_COORD: &str = "psi";
+/// The boozer poloidal angle **in \[rads\]**.
+pub const PSIP_COORD: &str = "psi_p";
 /// The toroidal flux **in Normalized Units**.
 pub const THETA_COORD: &str = "boozer_theta";
 
